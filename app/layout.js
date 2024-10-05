@@ -1,4 +1,5 @@
 
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 import {Outfit} from "next/font/google";
 
@@ -14,6 +15,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={inter.className}>
+           <Toaster />
         {children}
       </body>
     </html>
