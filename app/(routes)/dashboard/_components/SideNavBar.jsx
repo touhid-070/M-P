@@ -50,8 +50,9 @@ function SideNavBar() {
                     <span className='text-xl font-black text-[#007DFC]'>MeetPoint</span>
                 </div>
             </div>
+            <Link href={'/create-meeting'}>
             <Button className='flex gap-2 mt-7 w-full rounded-full'><Plus /> Create</Button>
-
+            </Link>
             <div className='mt-5 flex flex-col gap-5'>
                 {menu.map((item,index)=>(
                     <Link href={item.path} key={index}>
