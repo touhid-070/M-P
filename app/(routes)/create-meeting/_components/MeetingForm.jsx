@@ -54,6 +54,7 @@ function MeetingForm({setFormValue}) {
             locationUrl:locationUrl,
             themeColor:themeColor,
             businessId:doc(db,'Business',user?.email),
+            createdBy:user?.email,
         })
             toast('New Meeting Event Created');
             router.replace('/dashboard/meeting-type')
