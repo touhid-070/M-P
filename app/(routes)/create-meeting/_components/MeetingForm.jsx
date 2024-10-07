@@ -9,10 +9,13 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-
 import Image from 'next/image'
 import Link from 'next/link'
+import { doc, getFirestore, setDoc } from 'firebase/firestore'
+import {app} from '@/config/FirebaseConfig'
+import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 
 
@@ -24,15 +27,37 @@ function MeetingForm({setFormValue}) {
     const [locationType, setLocationType] = useState();
     const [locationUrl, setLocationUrl] = useState();
 
+
+    const {user}=useKindeBrowserClient();
+
+    const db=getFirestore(app);
+
+    const router=useRouter();
+
     useEffect(()=>{
         setFormValue({
             eventName:eventName,
             duration:duration,
             locationType:locationType,
             locationUrl:locationUrl,
-            themeColor:themeColor
+            themeColor:themeColor,
         })
-    },[eventName,duration,locationType,locationUrl,themeColor])
+    },[eventName,duration,locationType,locationUrl,themeColor]);
+
+    const onCreateClick= async()=>{
+        const id=Date.now().toString();
+        await setDoc(doc(db,'MeetingEvent',id),{
+            id:id,
+            eventName:eventName,
+            duration:duration,
+            locationType:locationType,
+            locationUrl:locationUrl,
+            themeColor:themeColor,
+            businessId:doc(db,'Business',user?.email),
+        })
+            toast('New Meeting Event Created');
+            router.replace('/dashboard/meeting-type')
+    }
 
     return (
         <div className='p-7 '>
@@ -110,7 +135,9 @@ function MeetingForm({setFormValue}) {
                     </div>
                 </div>
             </div>
-            <Button className='w-full' disabled={(!eventName || !duration || !locationType || !locationUrl)}>Create</Button>
+            <Button className='w-full' disabled={(!eventName || !duration || !locationType || !locationUrl)}
+            onClick={()=>onCreateClick()}
+            >Create</Button>
         </div>
     )
 }
