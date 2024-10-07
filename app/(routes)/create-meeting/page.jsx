@@ -1,6 +1,7 @@
 "use client"
 import React,{useState} from 'react'
 import MeetingForm from './_components/MeetingForm'
+import PreviewMeeting from './_components/PreviewMeeting';
 
 function CreateMeeting() {
 
@@ -14,7 +15,7 @@ function CreateMeeting() {
         </div>
         {/**Preview */}
         <div className='md:col-span-2'>
-          
+          <PreviewMeeting formValue={formValue}/>
         </div>
     </div>
   )

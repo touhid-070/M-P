@@ -36,7 +36,7 @@ function MeetingForm({setFormValue}) {
 
     return (
         <div className='p-7 '>
-            <Link href={'/dashboard'}> <h2 className='flex gap-2'><ChevronLeft /> Cancel</h2></Link>
+            <Link href={'/dashboard'}> <h2 className='flex gap-2 font-semibold'><ChevronLeft /> Cancel</h2></Link>
             <div className='mt-4'>
                 <h2 className='font-bold text-2xl my-4'>Create New Event</h2>
                 <hr />
