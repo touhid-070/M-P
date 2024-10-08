@@ -1,14 +1,17 @@
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import { Clock, MapPin } from 'lucide-react'
+import { format } from 'date-fns'
+import { CalendarCheck, Clock, MapPin, Timer } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import React,{useState,useEffect} from 'react'
+import TimeDateSelection from './TimeDateSelection'
 
 function MeetingTimeDateSelection({eventInfo,businessInfo}) {
     const [date,setDate]=useState(new Date());
     const [timeSlots,setTimeSlots] = useState();
-
+    const [enableTimeSlot,setEnableTimeSlot] =useState(false)
+    const [selectedTime,setSelectedTime]=useState();
 
     useEffect(()=>{
         eventInfo?.duration&&createTimeSlot(eventInfo?.duration)
@@ -29,6 +32,16 @@ function MeetingTimeDateSelection({eventInfo,businessInfo}) {
         setTimeSlots(slots);
     };
 
+    const handleDateChange=(date)=>{
+        setDate(date);
+        const day=format(date,'EEEE');
+        if(businessInfo.daysAvailable?.[day]){
+            setEnableTimeSlot(true)
+        }else{
+            setEnableTimeSlot(false)
+        }
+    }
+
     return (
         <div className='p-5 py-10 shadow-lg m-5 border-t-8 mx-10 md:mx-26 lg:mx-56 my-10'style={{borderTopColor:eventInfo?.themeColor}}>
             <div className='flex items-center gap-1 '>
@@ -46,28 +59,21 @@ function MeetingTimeDateSelection({eventInfo,businessInfo}) {
                     <div className='mt-5 flex flex-col gap-4'>
                         <h2 className='flex gap-2'><Clock />{eventInfo?.duration} Min</h2>
                         <h2 className='flex gap-2'><MapPin />{eventInfo?.locationType} Meeting</h2>
+                        <h2 className='flex gap-2'><CalendarCheck/>{format(date,'PPP')} </h2>
+                        {selectedTime&& <h2 className='flex gap-2'><Timer/>{selectedTime} </h2>}
+
                         <Link href={eventInfo?.locationUrl ? eventInfo?.locationUrl : '#'} className='text-primary'><h2>{eventInfo?.locationUrl}</h2></Link>
                     </div>
                 </div>
 
                 {/**Time and date selection */}
-                <div className='md:col-span-2 flex px-4'>
-                    <div className='flex flex-col'>
-                        <h2 className='font-bold text-lg'>Select Date & Time</h2>
-                        <Calendar
-                            mode="single"
-                            selected={date}
-                            onSelect={setDate}
-                            className="rounded-md border mt-5"
-                            disabled={(date)=>date<=new Date()}
-                        />
-                    </div>
-                    <div className='flex flex-col w-full overflow-auto gap-4 p-5' style={{maxHeight:'400px'}}>
-                        {timeSlots?.map((time,index)=>(
-                            <Button className='border-primary text-primary' variant='outline'>{time}</Button>
-                        ))}
-                    </div>
-                </div>
+                <TimeDateSelection 
+                date={date}
+                enableTimeSlot={enableTimeSlot}
+                handleDateChange={handleDateChange}
+                setSelectedTime={setSelectedTime}
+                timeSlots={timeSlots}
+                />
             </div>
 
         </div>
