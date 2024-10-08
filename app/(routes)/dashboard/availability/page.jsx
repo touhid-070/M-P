@@ -1,10 +1,10 @@
 "use client"
 import DaysList from '@/app/_utils/DaysList'
-import React,{useState} from 'react'
+import React,{useState,useEffect} from 'react'
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { collection, doc, getFirestore, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, getFirestore, updateDoc } from 'firebase/firestore'
 import {app} from '@/config/FirebaseConfig'
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs'
 import { toast } from 'sonner'
@@ -12,12 +12,47 @@ import { toast } from 'sonner'
 
 
 function Availability() {
-    const [daysAvailable,setDaysAvailable]=useState([]);
+    const [daysAvailable,setDaysAvailable]=useState(
+        {
+            Sunday:false
+        },
+        {
+            Monday:false
+        },
+        {
+            Tuesday:false
+        },
+        {
+            Wednesday:false
+        },
+        {
+            Thursday:false
+        },
+        {
+            Friday:false
+        },
+        {
+            Saturday:false
+        },
+    );
     const [startTime,setStartTime]=useState();
     const [endTime,setEndTime]=useState();
 
     const db=getFirestore(app);
     const {user}= useKindeBrowserClient();
+    
+    useEffect(()=>{
+        user&&getBusinessInfo();
+    },[user])
+
+    const getBusinessInfo=async()=>{
+        const docRef=doc(db,'Business',user?.email)
+        const docSnap= await getDoc(docRef);
+        const result = docSnap.data();
+        setDaysAvailable(result.daysAvailable)
+        setStartTime(result.startTime)
+        setEndTime(result.endTime)
+    }
 
     const onHandleChange=(day,value)=>{
         setDaysAvailable({
@@ -49,6 +84,7 @@ function Availability() {
                     {DaysList.map((item, index) => (
                         <div key={index}>
                             <h2 className='justify-center font-medium'><Checkbox 
+                            checked={daysAvailable[item.day]?daysAvailable[item.day]:false}
                             onCheckedChange={(e)=>onHandleChange(item.day,e)}/> {item.day}</h2>
                         </div>
                     ))}
@@ -59,11 +95,15 @@ function Availability() {
                 <div className='flex gap-10'>
                     <div className='mt-3'>
                         <h2>Start Time</h2>
-                        <Input type="time" onChange={(e)=>setStartTime(e.target.value)}/>
+                        <Input type="time"
+                        defaultValue={startTime}
+                        onChange={(e)=>setStartTime(e.target.value)}/>
                     </div>
                     <div className='mt-3'>
                         <h2>End Time</h2>
-                        <Input type="time" onChange={(e)=>setEndTime(e.target.value)}/>
+                        <Input type="time"
+                        defaultValue={endTime}
+                        onChange={(e)=>setEndTime(e.target.value)}/>
                     </div>
                 </div>
             </div>
