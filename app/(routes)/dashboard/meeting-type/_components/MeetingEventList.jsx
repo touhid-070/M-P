@@ -1,6 +1,6 @@
 "use client"
 import { Input } from '@/components/ui/input'
-import { getFirestore, collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { getFirestore, collection, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore'
 import React, { useEffect, useState } from 'react'
 import { app } from '@/config/FirebaseConfig'
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
@@ -18,6 +18,7 @@ import {
 function MeetingEventList() {
     const db = getFirestore(app);
     const { user } = useKindeBrowserClient();
+    const [businessInfo,setBusinessInfo]=useState()
     const [eventList, setEventList] = useState([]);
 
     const getEventList = async () => {
@@ -32,14 +33,27 @@ function MeetingEventList() {
     }
     useEffect(() => {
         user && getEventList();
+        user&&BusinessInfo();
     }, [user])
+
+    const BusinessInfo=async()=>{
+        const docRef=doc(db,'Business',user?.email);
+        const docSnap=await getDoc(docRef);
+        setBusinessInfo(docSnap.data())
+    }
 
     const onDeleteMeetingEvent = async (event) => {
 
-        await deleteDoc(doc(db, "MeetingEvent", event?.id)).then(resp=>{
+        await deleteDoc(doc(db, "MeetingEvent", event?.id)).then(resp => {
             toast('Meeting Event Deleted!');
             getEventList();
         })
+    }
+
+    const onCopyClickHandler = (event) => {
+        const meetingEventUrl=process.env.NEXT_PUBLIC_BASE_URL+'/'+businessInfo.businessName+'/'+event.id
+        navigator.clipboard.writeText(meetingEventUrl);
+        toast('Copied to Clipboard')
     }
 
     return (
@@ -69,8 +83,8 @@ function MeetingEventList() {
 
                     <div className='flex justify-between '>
                         <h2 className='flex gap-2 text-sm items-center cursor-pointer text-primary' onClick={() => {
-                            navigator.clipboard.writeText(event.locationUrl);
-                            toast('Copied to Clipboard')
+                            onCopyClickHandler(event)
+
                         }}><Copy className='h-4 w-4' />Copy Link</h2>
                         <Button variant='outline' className='rounded-full cursor-pointer border-primary text-primary'>Share</Button>
                     </div>
