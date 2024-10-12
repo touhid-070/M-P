@@ -5,10 +5,10 @@ import { CalendarCheck, Clock, MapPin, Timer } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useState, useEffect } from 'react'
-import TimeDateSelection  from './TimeDateSelection'
+import TimeDateSelection from './TimeDateSelection'
 import UserFormInfo from './UserFormInfo'
-import { doc, getFirestore, setDoc } from 'firebase/firestore'
-import {app} from '@/config/FirebaseConfig'
+import { collection, doc, getDocs, getFirestore, query, setDoc, where } from 'firebase/firestore'
+import { app } from '@/config/FirebaseConfig'
 import { toast } from 'sonner'
 
 function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
@@ -19,11 +19,12 @@ function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
     const [userName, setUserName] = useState();
     const [userEmail, setUserEmail] = useState();
     const [userNote, setUserNote] = useState('');
-    
+    const [prevBooking,setPrevBooking] = useState([]);
+
 
     const [step, setStep] = useState(1);
 
-    const db=getFirestore(app)
+    const db = getFirestore(app)
 
     useEffect(() => {
         eventInfo?.duration && createTimeSlot(eventInfo?.duration)
@@ -48,33 +49,48 @@ function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
         setDate(date);
         const day = format(date, 'EEEE');
         if (businessInfo.daysAvailable?.[day]) {
+            getPrevEventBooking(date)
             setEnableTimeSlot(true)
         } else {
             setEnableTimeSlot(false)
         }
     }
 
-    const handleScheduleEvent= async()=>{
-            const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}/;
-            if(regex.test(userEmail)==false){
-                toast('Enter valid email')
-                return ;
-            }
-            const docId=Date.now().toString();
-            await setDoc(doc(db,'ScheduledMeetings',docId),{
-                businessName:businessInfo.businessName,
-                businessEmail:businessInfo.email,
-                selectedTime:selectedTime,
-                selectedDate:date,
-                duration:eventInfo.duration,
-                locationUrl:eventInfo.locationUrl,
-                eventId:eventInfo.id,
-                id:docId,
-                userName:userName,
-                userEmail:userEmail,
-                userNote:userNote,
-            }).then(resp=>{
-                toast('Meeting Scheduled successfully!')
+    const handleScheduleEvent = async () => {
+        const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}/;
+        if (regex.test(userEmail) == false) {
+            toast('Enter valid email')
+            return;
+        }
+        const docId = Date.now().toString();
+        await setDoc(doc(db, 'ScheduledMeetings', docId), {
+            businessName: businessInfo.businessName,
+            businessEmail: businessInfo.email,
+            selectedTime: selectedTime,
+            selectedDate: date,
+            duration: eventInfo.duration,
+            locationUrl: eventInfo.locationUrl,
+            eventId: eventInfo.id,
+            id: docId,
+            userName: userName,
+            userEmail: userEmail,
+            userNote: userNote,
+        }).then(resp => {
+            toast('Meeting Scheduled successfully!')
+        })
+    }
+
+    /**Used to fetch previous booking ffor given event */
+
+    const getPrevEventBooking =async (date_) => {
+        const q = query(collection(db, 'ScheduledMeetings'),
+            where('selectedDate', '==', date_),
+            where('eventId', '==', eventInfo.id));
+
+            const querySnapShot=await getDocs(q);
+            querySnapShot.forEach((doc)=>{
+                console.log("--",doc.data());
+                setPrevBooking(prev=>[...prev,doc.data()])
             })
     }
 
@@ -110,11 +126,12 @@ function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
                     setSelectedTime={setSelectedTime}
                     timeSlots={timeSlots}
                     selectedTime={selectedTime}
+                    prevBooking={prevBooking}
                 /> :
-                    <UserFormInfo 
-                    setUserName={setUserName}
-                    setUserEmail={setUserEmail}
-                    setUserNote={setUserNote}
+                    <UserFormInfo
+                        setUserName={setUserName}
+                        setUserEmail={setUserEmail}
+                        setUserNote={setUserNote}
                     />}
 
             </div>
@@ -127,8 +144,8 @@ function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
                     disabled={!selectedTime || !date}
                     onClick={() => setStep(step + 1)}
                 >Next</Button> :
-                    <Button disabled={!userName||!userEmail}
-                    onClick={handleScheduleEvent}
+                    <Button disabled={!userName || !userEmail}
+                        onClick={handleScheduleEvent}
                     >Schedule</Button>
                 }
             </div>
