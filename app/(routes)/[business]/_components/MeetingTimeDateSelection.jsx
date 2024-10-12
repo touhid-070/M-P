@@ -10,6 +10,10 @@ import UserFormInfo from './UserFormInfo'
 import { collection, doc, getDocs, getFirestore, query, setDoc, where } from 'firebase/firestore'
 import { app } from '@/config/FirebaseConfig'
 import { toast } from 'sonner'
+import Plunk from '@plunk/node'
+import { render } from "@react-email/components";
+import Email from '@/emails'
+import { useRouter } from 'next/navigation'
 
 function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
     const [date, setDate] = useState(new Date());
@@ -19,12 +23,14 @@ function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
     const [userName, setUserName] = useState();
     const [userEmail, setUserEmail] = useState();
     const [userNote, setUserNote] = useState('');
-    const [prevBooking,setPrevBooking] = useState([]);
-
+    const [prevBooking, setPrevBooking] = useState([]);
+    const router=useRouter();
 
     const [step, setStep] = useState(1);
 
     const db = getFirestore(app)
+
+    const plunk = new Plunk(process.env.NEXT_PUBLIC_PLUNK_API_KEY);
 
     useEffect(() => {
         eventInfo?.duration && createTimeSlot(eventInfo?.duration)
@@ -77,21 +83,41 @@ function MeetingTimeDateSelection({ eventInfo, businessInfo }) {
             userNote: userNote,
         }).then(resp => {
             toast('Meeting Scheduled successfully!')
+            sendEmail(userName);
         })
     }
 
     /**Used to fetch previous booking ffor given event */
 
-    const getPrevEventBooking =async (date_) => {
+    const getPrevEventBooking = async (date_) => {
         const q = query(collection(db, 'ScheduledMeetings'),
             where('selectedDate', '==', date_),
             where('eventId', '==', eventInfo.id));
 
-            const querySnapShot=await getDocs(q);
-            querySnapShot.forEach((doc)=>{
-                console.log("--",doc.data());
-                setPrevBooking(prev=>[...prev,doc.data()])
-            })
+        const querySnapShot = await getDocs(q);
+        querySnapShot.forEach((doc) => {
+            setPrevBooking(prev => [...prev, doc.data()])
+        })
+    }
+
+    const sendEmail =async (user) => {
+        const emailHtml = await render(<Email
+        businessName={businessInfo?.businessName}
+        date={format(date,'PPP').toString()}
+        duration={eventInfo?.duration}
+        meetingTime={selectedTime}
+        meetingUrl={eventInfo.locationUrl}
+        userFirstName={user}
+        />);
+
+        plunk.emails.send({
+            to: userEmail,
+            subject: "New Meeting Schedul Details",
+            body: emailHtml,
+        }).then(resp=>{
+            router.replace('/confirmation')
+            toast('Email sent successfully')
+        })
     }
 
     return (
